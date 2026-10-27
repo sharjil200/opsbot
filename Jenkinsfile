@@ -26,15 +26,14 @@ pipeline {
         
         stage('Deploy on OpsBot Server') {
             steps {
-                // SSH into opsbot-server, build the docker image, and run it
                 sshagent(credentials: [env.CREDENTIALS_ID]) {
                     sh """
                         ssh -o StrictHostKeyChecking=no ${env.OPSBOT_HOST} << 'EOF'
                             cd ~/opsbot-workspace
-                            docker build -t ${IMAGE_NAME} .
-                            docker stop ${CONTAINER_NAME} || true
-                            docker rm ${CONTAINER_NAME} || true
-                            docker run -d -p 5000:5000 --name ${CONTAINER_NAME} ${IMAGE_NAME}
+                            /usr/bin/docker build -t ${IMAGE_NAME} .
+                            /usr/bin/docker stop ${CONTAINER_NAME} || true
+                            /usr/bin/docker rm ${CONTAINER_NAME} || true
+                            /usr/bin/docker run -d -p 5000:5000 --name ${CONTAINER_NAME} ${IMAGE_NAME}
                         EOF
                     """
                 }
