@@ -17,8 +17,9 @@ pipeline {
         
         stage('Transfer Code to OpsBot Server') {
             steps {
-                // Use sshagent to securely copy project files to the opsbot server
                 sshagent(credentials: [env.CREDENTIALS_ID]) {
+                    // Create the workspace directory first, then scp files securely
+                    sh "ssh -o StrictHostKeyChecking=no ${env.OPSBOT_HOST} 'mkdir -p ~/opsbot-workspace'"
                     sh "scp -o StrictHostKeyChecking=no -r . ${env.OPSBOT_HOST}:~/opsbot-workspace"
                 }
             }
