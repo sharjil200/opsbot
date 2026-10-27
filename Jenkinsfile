@@ -18,9 +18,11 @@ pipeline {
         stage('Transfer Code to OpsBot Server') {
             steps {
                 sshagent(credentials: [env.CREDENTIALS_ID]) {
-                    // Create the workspace directory first, then scp files securely
-                    sh "ssh -o StrictHostKeyChecking=no ${env.OPSBOT_HOST} 'mkdir -p ~/opsbot-workspace'"
-                    sh "scp -o StrictHostKeyChecking=no -r . ${env.OPSBOT_HOST}:~/opsbot-workspace"
+                    // 1. Wipe out old workspace cleanly to avoid permission conflicts
+                    sh "ssh -o StrictHostKeyChecking=no ${env.OPSBOT_HOST} 'rm -rf ~/opsbot-workspace && mkdir -p ~/opsbot-workspace'"
+                    
+                    // 2. Copy only project files (excluding .git folder)
+                    sh "rsync -avz -e 'ssh -o StrictHostKeyChecking=no' --exclude '.git' ./ ${env.OPSBOT_HOST}:~/opsbot-workspace/"
                 }
             }
         }
