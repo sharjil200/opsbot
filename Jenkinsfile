@@ -2,6 +2,8 @@ pipeline {
     agent any
     
     environment {
+        OPSBOT_HOST = 'ubuntu@13.127.67.172'
+        CREDENTIALS_ID = 'opsbot-server-ssh'
         IMAGE_NAME = 'opsbot'
         CONTAINER_NAME = 'opsbot-app'
     }
@@ -13,22 +15,28 @@ pipeline {
             }
         }
         
-        stage('Build Docker Image') {
+        stage('Transfer Code to OpsBot Server') {
             steps {
-                // Notice: no 'sudo' needed here anymore!
-                sh "docker build -t ${IMAGE_NAME} ."
+                // Use sshagent to securely copy project files to the opsbot server
+                sshagent(credentials: [env.CREDENTIALS_ID]) {
+                    sh "scp -o StrictHostKeyChecking=no -r . ${env.OPSBOT_HOST}:~/opsbot-workspace"
+                }
             }
         }
         
-        stage('Deploy Container') {
+        stage('Deploy on OpsBot Server') {
             steps {
-                script {
-                    // Stop and remove the old container safely
-                    sh "docker stop ${CONTAINER_NAME} || true"
-                    sh "docker rm ${CONTAINER_NAME} || true"
-                    
-                    // Run the new container on port 5000
-                    sh "docker run -d -p 5000:5000 --name ${CONTAINER_NAME} ${IMAGE_NAME}"
+                // SSH into opsbot-server, build the docker image, and run it
+                sshagent(credentials: [env.CREDENTIALS_ID]) {
+                    sh """
+                        ssh -o StrictHostKeyChecking=no ${env.OPSBOT_HOST} << 'EOF'
+                            cd ~/opsbot-workspace
+                            docker build -t ${IMAGE_NAME} .
+                            docker stop ${CONTAINER_NAME} || true
+                            docker rm ${CONTAINER_NAME} || true
+                            docker run -d -p 5000:5000 --name ${CONTAINER_NAME} ${IMAGE_NAME}
+                        EOF
+                    """
                 }
             }
         }
@@ -36,10 +44,10 @@ pipeline {
     
     post {
         success {
-            echo '🎉 OpsBot pipeline built and deployed successfully!'
+            echo '🎉 OpsBot successfully deployed to the remote OpsBot server!'
         }
         failure {
-            echo '❌ Pipeline failed. Check the console logs for details.'
+            echo '❌ Remote deployment failed. Check logs.'
         }
     }
 }
