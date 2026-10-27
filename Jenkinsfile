@@ -29,11 +29,11 @@ pipeline {
                 sshagent(credentials: [env.CREDENTIALS_ID]) {
                     sh '''
                         ssh -o StrictHostKeyChecking=no ubuntu@13.127.67.172 << 'EOF'
-                            cd ~/opsbot-workspace
-                            /usr/bin/docker build -t opsbot .
-                            /usr/bin/docker stop opsbot-app || true
-                            /usr/bin/docker rm opsbot-app || true
-                            /usr/bin/docker run -d -p 5000:5000 --name opsbot-app opsbot
+                        cd ~/opsbot-workspace
+                        /usr/bin/docker build -t opsbot .
+                        /usr/bin/docker stop opsbot-app || true
+                        /usr/bin/docker rm opsbot-app || true
+                        /usr/bin/docker run -d -p 5000:5000 --name opsbot-app opsbot
                         EOF
                     '''
                 }
